@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dbt-runner-config
+data:
+  DBT_TARGET: prod
+  SNOWFLAKE_DATABASE: PROD_ANALYTICS
+  SNOWFLAKE_WAREHOUSE: PROD_TRANSFORM_WH
+  SNOWFLAKE_ROLE: PROD_TRANSFORMER

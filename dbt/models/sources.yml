@@ -1,0 +1,17 @@
+version: 2
+
+sources:
+  - name: raw
+    schema: RAW
+    tables:
+      - name: orders
+
+models:
+  - name: stg_orders
+    columns:
+      - name: order_id
+        data_tests: [unique, not_null]
+  - name: fct_daily_revenue
+    columns:
+      - name: order_date
+        data_tests: [unique, not_null]

@@ -1,0 +1,51 @@
+# Release pipeline, run by hand. Each environment is a GitHub Environment, so prod needs a reviewer's approval
+# and its own secrets (Snowflake key pair, cloud credentials, kubeconfig).
+name: deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Environment to deploy
+        type: choice
+        options: [dev, prod]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    permissions:
+      contents: read
+      packages: write
+    env:
+      SNOWFLAKE_ORGANIZATION_NAME: ${{ secrets.SNOWFLAKE_ORGANIZATION_NAME }}
+      SNOWFLAKE_ACCOUNT_NAME: ${{ secrets.SNOWFLAKE_ACCOUNT_NAME }}
+      SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_TERRAFORM_USER }}
+      SNOWFLAKE_AUTHENTICATOR: SNOWFLAKE_JWT
+      SNOWFLAKE_PRIVATE_KEY: ${{ secrets.SNOWFLAKE_TERRAFORM_PRIVATE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt && python -m policy.check
+
+      - uses: hashicorp/setup-terraform@v3
+      - name: Terraform plan and apply
+        working-directory: terraform
+        run: |
+          terraform init -input=false -backend-config="key=snowflake/${{ inputs.environment }}.tfstate" \
+            -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" -backend-config="region=${{ vars.AWS_REGION }}"
+          terraform plan -input=false -var-file="envs/${{ inputs.environment }}.tfvars" -out=tfplan
+          terraform apply -input=false tfplan
+
+      - name: Build and push the dbt runner image
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker build -f docker/Dockerfile -t ghcr.io/saigwe/dbt-runner:0.1.0 .
+          docker push ghcr.io/saigwe/dbt-runner:0.1.0
+
+      - name: Apply Kubernetes manifests
+        run: |
+          echo "${{ secrets.KUBECONFIG }}" > "$RUNNER_TEMP/kubeconfig"
+          kubectl --kubeconfig "$RUNNER_TEMP/kubeconfig" apply -k "k8s/overlays/${{ inputs.environment }}"

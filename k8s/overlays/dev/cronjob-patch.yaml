@@ -1,0 +1,6 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: dbt-build
+spec:
+  schedule: "0 7 * * 1-5"            # dev builds once each weekday morning

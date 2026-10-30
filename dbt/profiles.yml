@@ -1,0 +1,15 @@
+# Everything comes from the environment: the ConfigMap (non-secret) and the snowflake-credentials Secret.
+analytics:
+  target: "{{ env_var('DBT_TARGET', 'dev') }}"
+  outputs:
+    dev: &snowflake
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT', 'placeholder') }}"
+      user: "{{ env_var('SNOWFLAKE_USER', 'svc_dbt') }}"
+      private_key: "{{ env_var('SNOWFLAKE_PRIVATE_KEY', '') }}"
+      role: "{{ env_var('SNOWFLAKE_ROLE', 'DEV_TRANSFORMER') }}"
+      database: "{{ env_var('SNOWFLAKE_DATABASE', 'DEV_ANALYTICS') }}"
+      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE', 'DEV_TRANSFORM_WH') }}"
+      schema: STAGING
+      threads: 4
+    prod: *snowflake
