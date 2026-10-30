@@ -48,6 +48,10 @@ docker build -f docker/Dockerfile -t dbt-runner .
 
 Deploying for real needs a Snowflake account, a `TERRAFORM_ADMIN` role with key-pair auth, a state bucket and a cluster. `deploy.yml` lists the secrets it expects. Everything else validates without any of them.
 
+## Walkthrough
+
+- [ ] 3-minute Loom walkthrough ([script ready](docs/walkthrough.md))
+
 ## Stack
 
 Terraform (Snowflake provider), Docker, Kubernetes, Kustomize, kubeconform, GitHub Actions, dbt, Python (python-hcl2, PyYAML), pytest.
